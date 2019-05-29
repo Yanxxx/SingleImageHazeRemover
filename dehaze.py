@@ -9,27 +9,14 @@ class Channel_value:
     intensity = -1.0
 
 
-def find_intensity_of_atmospheric_light(img, gray):
+
+def find_intensity_of_atmospheric_light_fast(img, gray):
     top_num = int(img.shape[0] * img.shape[1] * 0.001)
-    toplist = [Channel_value()] * top_num
-    dark_channel = find_dark_channel(img)
-
-    for y in xrange(img.shape[0]):
-        for x in xrange(img.shape[1]):
-            val = img.item(y, x, dark_channel)
-            intensity = gray.item(y, x)
-            for t in toplist:
-                if t.val < val or (t.val == val and t.intensity < intensity):
-                    t.val = val
-                    t.intensity = intensity
-                    break
-
-    max_channel = Channel_value()
-    for t in toplist:
-        if t.intensity > max_channel.intensity:
-            max_channel = t
-
-    return max_channel.intensity
+    dark_channel = find_dark_channel(img)    
+    val = img[:,:,dark_channel]    
+    idx = np.argsort(val.ravel())[-top_num:][::-1] 
+    topN_val = gray.ravel()[idx]
+    return max(topN_val)
 
 
 def find_dark_channel(img):
@@ -68,7 +55,7 @@ def main():
     img = cv2.imread(imageName)
     cv2.namedWindow("result", cv2.CV_WINDOW_AUTOSIZE)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    light_intensity = find_intensity_of_atmospheric_light(img, gray)
+    light_intensity = find_intensity_of_atmospheric_light_fast(img, gray)
     w = 0.95
     t0 = 0.55
     outimg = dehaze(img, light_intensity, 20, t0, w)
